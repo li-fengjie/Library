@@ -1,0 +1,1822 @@
+<!doctype html>
+<html lang="ch">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <meta name="format-detection" content="telephone=no">
+    <title>江西理工大学图书馆座位管理系统</title>
+    <style>
+        ul {
+            padding:0px;
+            list-style: none;/*去掉ul样式*/
+        }
+        ul li {
+            float:left;/*使li水平平铺*/
+        }
+
+        /*为奇数的li*/
+        ul li:nth-child(odd) {
+        }
+        /*椅子的样式*/
+        ul[name = "chair"] li img {
+            height: 16px;/*位置宽高*/
+            width: 16px;
+        }
+        /*每行第一个椅子*/
+        ul[name = "chair"] li:first-child img {
+            margin-left:20px;
+        }
+        /*奇数椅子*/
+        ul[name = "chair"] li:nth-child(2n+3) img {
+            margin-left:30px;/*异桌椅子之间的距离*/
+        }
+        /*偶数椅子*/
+        ul[name = "chair"] li:nth-child(even) img {
+            margin-left:10px;/*同桌椅子之间的距离*/
+        }
+    </style>
+    <script src="js/jquery.min.js"></script>
+    <script src="js/bootstrap.min.js"></script>
+    <script>
+        $(function () {
+            $(".meun-item").click(function () {
+                $(".meun-item").removeClass("meun-item-active");
+                $(this).addClass("meun-item-active");
+                var itmeObj = $(".meun-item").find("img");
+                itmeObj.each(function () {
+                    var items = $(this).attr("src");
+                    items = items.replace("_grey.png", ".png");
+                    items = items.replace(".png", "_grey.png")
+                    $(this).attr("src", items);
+                });
+                var attrObj = $(this).find("img").attr("src");
+                ;
+                attrObj = attrObj.replace("_grey.png", ".png");
+                $(this).find("img").attr("src", attrObj);
+            });
+            $("#topAD").click(function () {
+                $("#topA").toggleClass(" glyphicon-triangle-right");
+                $("#topA").toggleClass(" glyphicon-triangle-bottom");
+            });
+            $("#topBD").click(function () {
+                $("#topB").toggleClass(" glyphicon-triangle-right");
+                $("#topB").toggleClass(" glyphicon-triangle-bottom");
+            });
+            $("#topCD").click(function () {
+                $("#topC").toggleClass(" glyphicon-triangle-right");
+                $("#topC").toggleClass(" glyphicon-triangle-bottom");
+            });
+            $(".toggle-btn").click(function () {
+                $("#leftMeun").toggleClass("show");
+                $("#rightContent").toggleClass("pd0px");
+            })
+        })
+    </script>
+    <!--分页-->
+    <script type="text/javascript">
+        function getXMLHttpRequest() {
+            var xmlhttp;
+            if (window.XMLHttpRequest) {
+                //目前主流浏览器
+                xmlhttp = new XMLHttpRequest();
+            } else {
+                //ie 6  7
+                xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+            }
+            return xmlhttp;
+        }
+
+        var curr_pageno = 0;
+        var pagesize = 10;
+        var pagesum = 0;
+
+        function loadData(pageno) {
+            var xmlhttp = getXMLHttpRequest();
+            xmlhttp.onreadystatechange = function () {
+                if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+                    //4代表响应数据已经读取完毕。
+                    //200代表代表读取的响应数据是一个成功的数据。
+                    //str就是json对应的字符串
+                    var str = xmlhttp.responseText;
+                    var jsonObject = JSON.parse(str);
+                    curr_pageno = jsonObject.pageNo;
+                    pagesum = jsonObject.pageSum;
+                    var jsonArray = jsonObject.user;
+                    var temp = "";
+                    for (var i = 0; i < jsonArray.length; i++) {
+                        temp = temp + "<div class=\"row\">\n" +
+                            "                            <div class=\"col-xs-2 \">\n" +
+                            jsonArray[i].id +
+                            "                            </div>\n" +
+                            "                            <div class=\"col-xs-2\">\n" +
+                            jsonArray[i].college +
+                            "                            </div>\n" +
+                            "                            <div class=\"col-xs-2\">\n" +
+                            jsonArray[i].profession +
+                            "                            </div>\n" +
+                            "                            <div class=\"col-xs-2\">\n" +
+                            jsonArray[i].classes +
+                            "                            </div>\n" +
+                            "                            <div class=\"col-xs-2\">\n" +
+                            jsonArray[i].name +
+                            "                            </div>\n" +
+                            "                            <div class=\"col-xs-2\">\n" +
+                            "                                <button class=\"btn btn-success btn-xs\" data-toggle=\"modal\" data-target=\"#reviseUser\" onclick=\"temp_reviseUser(" + jsonArray[i].id + ")\">修改</button>\n" +
+                            "                                <button class=\"btn btn-danger btn-xs\" data-toggle=\"modal\" data-target=\"#deleteUser\" onclick=\"temp_id(" + jsonArray[i].id + ")\">删除</button>\n" +
+                            "                            </div>\n" +
+                            "                        </div>";
+                    }
+                    document.getElementById("stu_tablebody").innerHTML = temp;
+                    //开始设置生成页码的逻辑
+                    temp = "";
+                    temp = "<ul class=\"pagination\">\n" +
+                        "                            <li>\n" +
+                        "                            <select id=\"pages_select\" onchange=\"pageschange()\">";
+                    for (var i = 0; i < jsonObject.pageSum; i++) {
+                        temp = temp + "<option onclick=\"loadData(" + (i + 1) + ")\">" + (i + 1) + "</option>";
+                    }
+                    temp = temp + "</select>\n" +
+                        "                            &nbsp;页\n" +
+                        "                            </li>";
+
+                    temp = temp + " <li onclick=\"gopage(-1)\">\n" +
+                        "                            <i onclick=\"gopage(-1)\" class=\"glyphicon glyphicon-menu-left\">\n" +
+                        "                            </i>\n" +
+                        "                            </li>\n" +
+                        "                            <li onclick=\"gopage(1)\">\n" +
+                        "                            <i onclick=\"gopage(1)\" class=\"glyphicon glyphicon-menu-right\">\n" +
+                        "                        </i>\n" +
+                        "                        </li>\n" +
+                        "                        </ul>";
+                    document.getElementById("stu_pages_footer").innerHTML = temp;
+                    var options = document.getElementById('pages_select').children;
+                    options[nowPage - 1].sold = true;
+                }
+
+            };
+            //javascript请求的网址
+            var url = "info";
+            //打开连接
+            xmlhttp.open("post", url);
+            //设置请求信息的头
+            xmlhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+            //发送数据
+            xmlhttp.send("pagesize=" + pagesize + "&pageno=" + pageno);
+            return false;
+        }
+
+        function gopage(n) {
+            if (curr_pageno + n == 0) {
+                return;
+            }
+            if (curr_pageno + n == pagesum + 1) {
+                return;
+            }
+            curr_pageno = curr_pageno + n;
+            loadData(curr_pageno);
+        }
+    </script>
+    <script type="text/javascript">
+        function loadRoomsData(pageno) {
+            var xmlhttp = getXMLHttpRequest();
+            xmlhttp.onreadystatechange = function () {
+//                if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+                //4代表响应数据已经读取完毕。
+                //200代表代表读取的响应数据是一个成功的数据。
+                //str就是json对应的字符串
+                var str = xmlhttp.responseText;
+                var jsonObject = JSON.parse(str);
+                curr_pageno = jsonObject.pageNo;
+                pagesum = jsonObject.pageSum;
+                var jsonArray = jsonObject.room;
+                var temp = "";
+                for (var i = 0; i < jsonArray.length; i++) {
+                    var unable = jsonArray[i].sum - jsonArray[i].usable;
+                    temp = temp + "<div class=\"row\">\n" +
+                        "                            <div class=\"col-xs-2 \">\n" +
+                        jsonArray[i].id +
+                        "                            </div>\n" +
+                        "                            <div class=\"col-xs-2\">\n" +
+                        jsonArray[i].sum +
+                        "                            </div>\n" +
+                        "                            <div class=\"col-xs-2\">\n" +
+                        jsonArray[i].usable +
+                        "                            </div>\n" +
+                        "                            <div class=\"col-xs-2\">\n" +
+                        unable +
+                        "                            </div>\n" +
+                        "                            <div class=\"col-xs-2\">\n" +
+                        "                                <a class=\"linkCcc\" href=\"#sitDetail\" aria-controls=\"char\" role=\"tab\" data-toggle=\"tab\">详情</a>\n" +
+                        "                            </div>\n" +
+                        "                        </div>";
+                }
+                document.getElementById("room_tablebody").innerHTML = temp;
+            };
+            //javascript请求的网址
+            var url = "roomsinfo";
+            //打开连接
+            xmlhttp.open("post", url);
+            //设置请求信息的头
+            xmlhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+            //发送数据
+            xmlhttp.send("pagesize=" + pagesize + "&pageno=" + pageno);
+            return false;
+        }
+    </script>
+    <!--页码-->
+    <script>
+        var nowPage = 1;
+
+        function pageschange() {
+            //获取被选中的option标签
+            var vs = $('select  option:sold').val();
+            var n = parseInt(vs);
+            nowPage = n;
+            curr_pageno = 0;
+            gopage(n);
+        }
+    </script>
+
+    <!--增删改数据操作-->
+    <script>
+        var id;
+
+        function temp_id(n) {
+            id = n;
+//            alert(n);
+        }
+
+        //查询by id
+        function temp_reviseUser(s_id) {
+            id = s_id;
+            var xmlhttp = getXMLHttpRequest();
+            xmlhttp.onreadystatechange = function () {
+                if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+                    //4代表响应数据已经读取完毕。
+                    //200代表代表读取的响应数据是一个成功的数据。
+                    var str = xmlhttp.responseText;
+                    var jsonObject = JSON.parse(str);
+                    var college = jsonObject.college;
+                    var grade = jsonObject.grade;
+                    var profession = jsonObject.profession;
+                    var classes = jsonObject.classes;
+                    var name = jsonObject.name;
+                    document.getElementById("update_stu_id").value = id;
+                    document.getElementById("update_stu_college").value = college;
+                    document.getElementById("update_stu_grade").value = grade;
+                    document.getElementById("update_stu_profession").value = profession;
+                    document.getElementById("update_stu_classes").value = classes;
+                    document.getElementById("update_stu_name").value = name;
+                    return false;
+                }
+            };
+            //javascript请求的网址
+            var url = "selectUser";
+            //打开连接
+            xmlhttp.open("post", url);
+            //设置请求信息的头
+            xmlhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+            //发送数据
+            xmlhttp.send("id=" + id);
+            return false;
+        }
+
+        function findUser() {
+            var find_id = document.getElementById("find_user").value;
+            if (find_id == "") {
+                loadData(1);
+                return;
+            }
+            var xmlhttp = getXMLHttpRequest();
+            xmlhttp.onreadystatechange = function () {
+                if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+                    //4代表响应数据已经读取完毕。
+                    //200代表代表读取的响应数据是一个成功的数据。
+                    var str = xmlhttp.responseText;
+                    var jsonObject = JSON.parse(str);
+                    temp = "";
+                    temp = temp + "<div class=\"row\">\n" +
+                        "                            <div class=\"col-xs-2 \">\n" +
+                        jsonObject.id +
+                        "                            </div>\n" +
+                        "                            <div class=\"col-xs-2\">\n" +
+                        jsonObject.college +
+                        "                            </div>\n" +
+                        "                            <div class=\"col-xs-2\">\n" +
+                        jsonObject.profession +
+                        "                            </div>\n" +
+                        "                            <div class=\"col-xs-2\">\n" +
+                        jsonObject.classes +
+                        "                            </div>\n" +
+                        "                            <div class=\"col-xs-2\">\n" +
+                        jsonObject.name +
+                        "                            </div>\n" +
+                        "                            <div class=\"col-xs-2\">\n" +
+                        "                                <button class=\"btn btn-success btn-xs\" data-toggle=\"modal\" data-target=\"#reviseUser\" onclick=\"temp_reviseUser(" + jsonObject.id + ")\">修改</button>\n" +
+                        "                                <button class=\"btn btn-danger btn-xs\" data-toggle=\"modal\" data-target=\"#deleteUser\" onclick=\"temp_id(" + jsonObject.id + ")\">删除</button>\n" +
+                        "                            </div>\n" +
+                        "                        </div>";
+                    if (jsonObject.pageSum == 0) {
+                        temp = "";
+                    }
+                    document.getElementById("stu_tablebody").innerHTML = temp;
+                    //开始设置生成页码的逻辑
+                    temp = "";
+                    temp = "<ul class=\"pagination\">\n" +
+                        "                            <li>\n" +
+                        "                            <select id=\"pages_select\" onchange=\"pageschange()\">";
+                    for (var i = 0; i < jsonObject.pageSum; i++) {
+                        temp = temp + "<option onclick=\"loadData(" + (i + 1) + ")\">" + (i + 1) + "</option>";
+                    }
+                    temp = temp + "</select>\n" +
+                        "                            &nbsp;页\n" +
+                        "                            </li>";
+
+                    temp = temp + " <li onclick=\"gopage(-1)\">\n" +
+                        "                            <i onclick=\"gopage(-1)\" class=\"glyphicon glyphicon-menu-left\">\n" +
+                        "                            </i>\n" +
+                        "                            </li>\n" +
+                        "                            <li onclick=\"gopage(1)\">\n" +
+                        "                            <i onclick=\"gopage(1)\" class=\"glyphicon glyphicon-menu-right\">\n" +
+                        "                        </i>\n" +
+                        "                        </li>\n" +
+                        "                        </ul>";
+                    document.getElementById("stu_pages_footer").innerHTML = temp;
+                    return false;
+                }
+            };
+            //javascript请求的网址
+            var url = "selectUser";
+            //打开连接
+            xmlhttp.open("post", url);
+            //设置请求信息的头
+            xmlhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+            //发送数据
+            xmlhttp.send("id=" + find_id);
+            return false;
+        }
+
+        //修改
+        function updateUser() {
+            var xmlhttp = getXMLHttpRequest();
+            xmlhttp.onreadystatechange = function () {
+                if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+                    //4代表响应数据已经读取完毕。
+                    //200代表代表读取的响应数据是一个成功的数据。
+                    var str = xmlhttp.responseText;
+                    if (str == "true") {
+                        gopage(nowPage - 1);
+                    } else {
+                        alert("服务器忙，请稍后重试...")
+                    }
+                    return false;
+                }
+            };
+            //javascript请求的网址
+            var url = "update";
+            //打开连接
+            xmlhttp.open("post", url);
+            //设置请求信息的头
+            xmlhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+            //发送数据
+            var update_stu_college = document.getElementById("update_stu_college").value;
+            var update_stu_grade = document.getElementById("update_stu_grade").value;
+            var update_stu_profession = document.getElementById("update_stu_profession").value;
+            var update_stu_classes = document.getElementById("update_stu_classes").value;
+            var update_stu_name = document.getElementById("update_stu_name").value;
+            xmlhttp.send("" +
+                "update_stu_id=" + id +
+                "&update_stu_college=" + update_stu_college +
+                "&update_stu_grade=" + update_stu_grade +
+                "&update_stu_profession=" + update_stu_profession +
+                "&update_stu_classes=" + update_stu_classes +
+                "&update_stu_name=" + update_stu_name);
+            return false;
+        }
+
+        //        删除
+        function deleteStu() {
+            var xmlhttp = getXMLHttpRequest();
+            xmlhttp.onreadystatechange = function () {
+                if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+                    //4代表响应数据已经读取完毕。
+                    //200代表代表读取的响应数据是一个成功的数据。
+                    var str = xmlhttp.responseText;
+                    if (str == "true") {
+                        gopage(nowPage - 1);
+                    } else {
+                        alert("服务器忙，请稍后重试...")
+                    }
+                    return false;
+                }
+            };
+            //javascript请求的网址
+            var url = "delStu";
+            //打开连接
+            xmlhttp.open("post", url);
+            //设置请求信息的头
+            xmlhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+            //发送数据
+            xmlhttp.send("id=" + id);
+            return false;
+        }
+
+        //添加
+        function addUser() {
+            var xmlhttp = getXMLHttpRequest();
+            xmlhttp.onreadystatechange = function () {
+                if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+                    //4代表响应数据已经读取完毕。
+                    //200代表代表读取的响应数据是一个成功的数据。
+                    var str = xmlhttp.responseText;
+                    if (str == "true") {
+                        gopage(0);
+                    } else {
+                        alert("服务器忙，请稍后重试...")
+                    }
+                    return false;
+                }
+            };
+            //javascript请求的网址
+            var url = "addStu";
+            //打开连接
+            xmlhttp.open("post", url);
+            //设置请求信息的头
+            xmlhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+            //发送数据
+            var update_stu_id = document.getElementById("add_stu_id").value;
+            var add_stu_college = document.getElementById("add_stu_college").value;
+            var add_stu_grade = document.getElementById("add_stu_grade").value;
+            var add_stu_profession = document.getElementById("add_stu_profession").value;
+            var add_stu_classes = document.getElementById("add_stu_classes").value;
+            var add_stu_name = document.getElementById("add_stu_name").value;
+            xmlhttp.send("" +
+                "stu_id=" + update_stu_id +
+                "&stu_college=" + add_stu_college +
+                "&stu_grade=" + add_stu_grade +
+                "&stu_profession=" + add_stu_profession +
+                "&stu_classes=" + add_stu_classes +
+                "&stu_name=" + add_stu_name);
+            return false;
+        }
+    </script>
+
+    <!--[if lt IE 9]>
+    <script src="js/html5shiv.min.js"></script>
+    <script src="js/respond.min.js"></script>
+    <![endif]-->
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="css/common.css"/>
+    <link rel="stylesheet" type="text/css" href="css/slide.css"/>
+    <link rel="stylesheet" type="text/css" href="css/bootstrap.min.css"/>
+    <link rel="stylesheet" type="text/css" href="css/flat-ui.min.css"/>
+    <link rel="stylesheet" type="text/css" href="css/jquery.nouislider.css">
+</head>
+
+<body>
+<div id="wrap">
+    <!-- 左侧菜单栏目块 -->
+    <div class="leftMeun" id="leftMeun">
+        <div id="logoDiv">
+            <p id="logoP"><img id="logo" alt="江西理工大学图书馆" src="images/logo.png"><span>江西理工图书馆</span></p>
+        </div>
+        <div id="personInfor">
+            <p>欢迎使用。</p>
+            <p>
+                <a href="logout">退出登录</a>
+            </p>
+        </div>
+        <div class="meun-title">账号管理</div>
+        <div class="meun-item" href="#char" aria-controls="char" role="tab" data-toggle="tab"><img
+                src="images/icon_chara_grey.png">权限管理
+        </div>
+        <div class="meun-item" onclick="loadData(nowPage)" href="#user" aria-controls="user" role="tab"
+             data-toggle="tab"><img
+                src="images/icon_user_grey.png">学生管理
+        </div>
+        <div class="meun-item" href="#chan" aria-controls="chan" role="tab" data-toggle="tab"><img
+                src="images/icon_change_grey.png">修改密码
+        </div>
+        <div class="meun-title">地区管理</div>
+        <div class="meun-item" href="#regu" aria-controls="regu" role="tab" data-toggle="tab"><img
+                src="images/icon_rule_grey.png">规则管理
+        </div>
+        <div class="meun-item" href="#stud" aria-controls="stud" role="tab" data-toggle="tab"><img
+                src="images/icon_card_grey.png">人员信息
+        </div>
+        <div class="meun-item" onclick="loadRoomsData(1)" href="#sitt" aria-controls="sitt" role="tab"
+             data-toggle="tab"><img
+                src="images/icon_char_grey.png">座位管理
+        </div>
+    </div>
+    <!-- 右侧具体内容栏目 -->
+    <div id="rightContent">
+        <a class="toggle-btn" id="nimei">
+            <i class="glyphicon glyphicon-align-justify"></i>
+        </a>
+        <!-- Tab panes -->
+        <div class="tab-content">
+            <!-- 权限管理模块 -->
+            <div role="tabpanel" class="tab-pane" id="char">
+
+                <div class="check-div">
+                    <button class="btn btn-yellow btn-xs" data-toggle="modal" data-target="#addChar">添加权限</button>
+                </div>
+                <div class="data-div">
+                    <div class="row tableHeader">
+                        <div class="col-xs-1 ">
+                            编码
+                        </div>
+                        <div class="col-xs-4">
+                            权限名
+                        </div>
+                        <div class="col-xs-5">
+                            描述
+                        </div>
+                        <div class="col-xs-2">
+                            操作
+                        </div>
+                    </div>
+                    <div class="tablebody">
+                        <div class="row">
+                            <div class="col-xs-1 ">
+                                1
+                            </div>
+                            <div class="col-xs-4">
+                                </span><span>管理员</span>
+                            </div>
+                            <div class="col-xs-5">
+                                管理员具有超年权限
+                            </div>
+                            <div class="col-xs-2">
+                                <button class="btn btn-success btn-xs" data-toggle="modal" data-target="#changeChar">
+                                    修改
+                                </button>
+                                <button class="btn btn-danger btn-xs" data-toggle="modal" data-target="#deleteChar">删除
+                                </button>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-xs-1 ">
+                                2
+                            </div>
+                            <div class="col-xs-4">
+                                <span>游客</span>
+                            </div>
+                            <div class="col-xs-5">
+                                可以查看信息
+                            </div>
+                            <div class="col-xs-2">
+                                <button class="btn btn-success btn-xs">修改</button>
+                                <button class="btn btn-danger btn-xs">删除</button>
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div>
+                <!--页码块-->
+                <footer class="footer" id="pages_footer">
+                </footer>
+                <!--增加权限弹出窗口-->
+                <div class="modal fade" id="addChar" role="dialog" aria-labelledby="gridSystemModalLabel">
+                    <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                                        aria-hidden="true">&times;</span></button>
+                                <h4 class="modal-title">添加权限</h4>
+                            </div>
+                            <div class="modal-body">
+                                <div class="container-fluid">
+                                    <form class="form-horizontal">
+                                        <div class="form-group ">
+                                            <label for="sName" class="col-xs-3 control-label">权限名：</label>
+                                            <div class="col-xs-6 ">
+                                                <input type="email" class="form-control input-sm duiqi" placeholder="">
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="sLink" class="col-xs-3 control-label">描述：</label>
+                                            <div class="col-xs-6 ">
+                                                <textarea class="form-control input-sm duiqi"></textarea>
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="sOrd" class="col-xs-3 control-label">系统资源：</label>
+                                            <div class="col-xs-6">
+                                                <input type="" class="form-control input-sm duiqi"
+                                                       placeholder="">
+                                            </div>
+                                        </div>
+
+                                    </form>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-xs btn-white" data-dismiss="modal">取 消</button>
+                                <button type="button" class="btn btn-xs btn-green">确 定</button>
+                            </div>
+                        </div>
+                        <!-- /.modal-content -->
+                    </div>
+                    <!-- /.modal-dialog -->
+                </div>
+                <!-- /.modal -->
+
+                <!--修改权限弹出窗口-->
+                <div class="modal fade" id="changeChar" role="dialog" aria-labelledby="gridSystemModalLabel">
+                    <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                                        aria-hidden="true">&times;</span></button>
+                                <h4 class="modal-title">修改权限</h4>
+                            </div>
+                            <div class="modal-body">
+                                <div class="container-fluid">
+                                    <form class="form-horizontal">
+                                        <div class="form-group ">
+                                            <label for="sName" class="col-xs-3 control-label">权限名：</label>
+                                            <div class="col-xs-6 ">
+                                                <input type="email" class="form-control input-sm duiqi"
+                                                       placeholder="">
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="sLink" class="col-xs-3 control-label">描述：</label>
+                                            <div class="col-xs-6 ">
+                                                <textarea class="form-control input-sm duiqi"></textarea>
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="sOrd" class="col-xs-3 control-label">系统资源：</label>
+                                            <div class="col-xs-6">
+                                                <input type="" class="form-control input-sm duiqi"
+                                                       placeholder="">
+                                            </div>
+                                        </div>
+
+                                    </form>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-xs btn-white" data-dismiss="modal">取 消</button>
+                                <button type="button" class="btn btn-xs btn-green">确 定</button>
+                            </div>
+                        </div>
+                        <!-- /.modal-content -->
+                    </div>
+                    <!-- /.modal-dialog -->
+                </div>
+                <!-- /.modal -->
+
+                <!--弹出删除权限警告窗口-->
+                <div class="modal fade" id="deleteChar" role="dialog" aria-labelledby="gridSystemModalLabel">
+                    <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                                        aria-hidden="true">&times;</span></button>
+                                <h4 class="modal-title">提示</h4>
+                            </div>
+                            <div class="modal-body">
+                                <div class="container-fluid">
+                                    确定要删除该权限？删除后不可恢复！
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-xs btn-white" data-dismiss="modal">取 消</button>
+                                <button type="button" class="btn btn-xs btn-danger">确 定</button>
+                            </div>
+                        </div>
+                        <!-- /.modal-content -->
+                    </div>
+                    <!-- /.modal-dialog -->
+                </div>
+                <!-- /.modal -->
+
+            </div>
+            <!--学生管理模块-->
+            <div role="tabpanel" class="tab-pane" id="user">
+                <div class="check-div form-inline">
+                    <div class="col-xs-3">
+                        <button class="btn btn-yellow btn-xs" data-toggle="modal" data-target="#addUser">添加学生</button>
+                    </div>
+                    <div class="col-xs-4">
+                        <input type="number" class="form-control input-sm" placeholder="输入学号搜索" id="find_user">
+                        <button class="btn btn-white btn-xs" onclick="findUser()">查 询</button>
+                    </div>
+                </div>
+                <div class="data-div">
+                    <div class="row tableHeader">
+                        <div class="col-xs-2">
+                            学号
+                        </div>
+                        <div class="col-xs-2">
+                            院系
+                        </div>
+                        <div class="col-xs-2">
+                            专业
+                        </div>
+                        <div class="col-xs-2">
+                            班级
+                        </div>
+                        <div class="col-xs-2">
+                            姓名
+                        </div>
+                        <div class="col-xs-2">
+                            操作
+                        </div>
+                    </div>
+                    <div class="tablebody" id="stu_tablebody">
+                        <!--TODO 添加数据-->
+                    </div>
+
+                </div>
+                <!--页码块-->
+                <footer class="footer" id="stu_pages_footer">
+
+                </footer>
+
+                <!--弹出添加用户窗口-->
+                <div class="modal fade" id="addUser" role="dialog" aria-labelledby="gridSystemModalLabel">
+                    <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                                        aria-hidden="true">&times;</span></button>
+                                <h4 class="modal-title">添加用户</h4>
+                            </div>
+                            <div class="modal-body">
+                                <div class="container-fluid">
+                                    <form class="form-horizontal" action="" method="post">
+                                        <div class="form-group ">
+                                            <label for="sName" class="col-xs-3 control-label">学号：</label>
+                                            <div class="col-xs-8 ">
+                                                <input type="number" class="form-control input-sm duiqi" id="add_stu_id"
+                                                       name="stu_id" placeholder="">
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="sLink" class="col-xs-3 control-label">姓名：</label>
+                                            <div class="col-xs-8 ">
+                                                <input type="" class="form-control input-sm duiqi" id="add_stu_name"
+                                                       name="stu_name" placeholder="">
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="sOrd" class="col-xs-3 control-label">院系：</label>
+                                            <div class="col-xs-8">
+                                                <select class=" form-control select-duiqi" id="add_stu_college"
+                                                        name="stu_college">
+                                                    <option value="资源与环境工程学院">资源与环境工程学院</option>
+                                                    <option value="经济管理学院">经济管理学院</option>
+                                                    <option value="理学院">理学院</option>
+                                                    <option value="冶金与化学工程学院">冶金与化学工程学院</option>
+                                                    <option value="建筑与测绘工程学院">建筑与测绘工程学院</option>
+                                                    <option value="材料科学与工程学院">材料科学与工程学院</option>
+                                                    <option value="机电工程学院">机电工程学院</option>
+                                                    <option value="电气工程与自动化学院">电气工程与自动化学院</option>
+                                                    <option value="信息工程学院">信息工程学院</option>
+                                                    <option value="文法学院">文法学院</option>
+                                                    <option value="外语外贸学院">外语外贸学院</option>
+                                                    <option value="文法学院">文法学院</option>
+                                                </select>
+                                            </div>
+
+                                            <!--<div class="col-xs-8">-->
+                                            <!--<input type="" class="form-control input-sm duiqi" id="stu_college"-->
+                                            <!--name="stu_college" placeholder="">-->
+                                            <!--</div>-->
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="sKnot" class="col-xs-3 control-label">班级：</label>
+                                            <div class="col-xs-8">
+                                                <input type="" class="form-control input-sm duiqi" id="add_stu_classes"
+                                                       name="stu_classes" placeholder="">
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="sKnot" class="col-xs-3 control-label">专业：</label>
+                                            <div class="col-xs-8">
+                                                <input type="" class="form-control input-sm duiqi"
+                                                       id="add_stu_profession"
+                                                       name="stu_profession" placeholder="">
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="sKnot" class="col-xs-3 control-label">年级：</label>
+                                            <div class="col-xs-8">
+                                                <input type="" class="form-control input-sm duiqi" id="add_stu_grade"
+                                                       name="stu_grade" placeholder="">
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-xs btn-white" data-dismiss="modal">取
+                                                消
+                                            </button>
+                                            <button type="button" class="btn btn-xs btn-green" data-dismiss="modal"
+                                                    onclick="addUser()">添 加
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+
+                        </div>
+                        <!-- /.modal-content -->
+                    </div>
+                    <!-- /.modal-dialog -->
+                </div>
+                <!-- /.modal -->
+
+                <!--弹出修改用户窗口-->
+                <div class="modal fade" id="reviseUser" role="dialog" aria-labelledby="gridSystemModalLabel">
+                    <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                                        aria-hidden="true">&times;</span></button>
+                                <h4 class="modal-title">修改用户</h4>
+                            </div>
+                            <div class="modal-body">
+                                <div class="container-fluid">
+                                    <form class="form-horizontal" action="" method="post">
+                                        <div class="form-group ">
+                                            <label for="sName" class="col-xs-3 control-label">学号：</label>
+                                            <div class="col-xs-8 ">
+                                                <input type="number" disabled="true" class="form-control input-sm duiqi"
+                                                       id="update_stu_id"
+                                                       name="update_stu_id" placeholder="">
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="sLink" class="col-xs-3 control-label">姓名：</label>
+                                            <div class="col-xs-8 ">
+                                                <input type="" class="form-control input-sm duiqi" id="update_stu_name"
+                                                       name="update_stu_name" placeholder="">
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="sOrd" class="col-xs-3 control-label">院系：</label>
+                                            <div class="col-xs-8">
+                                                <select class=" form-control select-duiqi" id="update_stu_college"
+                                                        name="update_stu_college">
+                                                    <option value="资源与环境工程学院">资源与环境工程学院</option>
+                                                    <option value="经济管理学院">经济管理学院</option>
+                                                    <option value="理学院">理学院</option>
+                                                    <option value="冶金与化学工程学院">冶金与化学工程学院</option>
+                                                    <option value="建筑与测绘工程学院">建筑与测绘工程学院</option>
+                                                    <option value="材料科学与工程学院">材料科学与工程学院</option>
+                                                    <option value="机电工程学院">机电工程学院</option>
+                                                    <option value="电气工程与自动化学院">电气工程与自动化学院</option>
+                                                    <option value="信息工程学院">信息工程学院</option>
+                                                    <option value="文法学院">文法学院</option>
+                                                    <option value="外语外贸学院">外语外贸学院</option>
+                                                    <option value="文法学院">文法学院</option>
+                                                </select>
+                                            </div>
+
+                                            <!--<div class="col-xs-8">-->
+                                            <!--<input type="" class="form-control input-sm duiqi" id="stu_college"-->
+                                            <!--name="stu_college" placeholder="">-->
+                                            <!--</div>-->
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="sKnot" class="col-xs-3 control-label">班级：</label>
+                                            <div class="col-xs-8">
+                                                <input type="" class="form-control input-sm duiqi"
+                                                       id="update_stu_classes"
+                                                       name="update_stu_classes" placeholder="">
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="sKnot" class="col-xs-3 control-label">专业：</label>
+                                            <div class="col-xs-8">
+                                                <input type="" class="form-control input-sm duiqi"
+                                                       id="update_stu_profession"
+                                                       name="update_stu_profession" placeholder="">
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="sKnot" class="col-xs-3 control-label">年级：</label>
+                                            <div class="col-xs-8">
+                                                <input type="" class="form-control input-sm duiqi" id="update_stu_grade"
+                                                       name="update_stu_grade" placeholder="">
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-xs btn-white" data-dismiss="modal">取
+                                                消
+                                            </button>
+                                            <button type="button" class="btn btn-xs btn-green" data-dismiss="modal"
+                                                    onclick="updateUser()">修 改
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+
+                        </div>
+                        <!-- /.modal-content -->
+                    </div>
+                    <!-- /.modal-dialog -->
+                </div>
+                <!-- /.modal -->
+
+                <!--弹出删除用户警告窗口-->
+                <div class="modal fade" id="deleteUser" role="dialog" aria-labelledby="gridSystemModalLabel">
+                    <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                                        aria-hidden="true">&times;</span></button>
+                                <h4 class="modal-title">提示</h4>
+                            </div>
+                            <div class="modal-body">
+                                <div class="container-fluid">
+                                    确定要删除该用户？删除后不可恢复！
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-xs btn-white" data-dismiss="modal">取 消</button>
+                                <button type="button" class="btn  btn-xs btn-danger" data-dismiss="modal"
+                                        onclick="deleteStu()">确 定
+                                </button>
+                            </div>
+                        </div>
+                        <!-- /.modal-content -->
+                    </div>
+                    <!-- /.modal-dialog -->
+                </div>
+                <!-- /.modal -->
+
+            </div>
+            <!-- 修改密码模块 -->
+            <div role="tabpanel" class="tab-pane" id="chan">
+                <div class="check-div">
+                    原始密码为12312313
+                </div>
+                <div style="padding: 50px 0;margin-top: 50px;background-color: #fff; text-align: right;width: 420px;margin: 50px auto;">
+                    <form class="form-horizontal">
+                        <div class="form-group">
+                            <label for="sKnot" class="col-xs-4 control-label">原密码：</label>
+                            <div class="col-xs-5">
+                                <input type="" class="form-control input-sm duiqi" placeholder=""
+                                       style="margin-top: 7px;">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="sKnot" class="col-xs-4 control-label">新密码：</label>
+                            <div class="col-xs-5">
+                                <input type="" class="form-control input-sm duiqi" placeholder=""
+                                       style="margin-top: 7px;">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="sKnot" class="col-xs-4 control-label">重复密码：</label>
+                            <div class="col-xs-5">
+                                <input type="" class="form-control input-sm duiqi" placeholder=""
+                                       style="margin-top: 7px;">
+                            </div>
+                        </div>
+                        <div class="form-group text-right">
+                            <div class="col-xs-offset-4 col-xs-5" style="margin-left: 169px;">
+                                <button type="reset" class="btn btn-xs btn-white">取 消</button>
+                                <button type="submit" class="btn btn-xs btn-green">确定</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+            </div>
+            <!--规则管理模块-->
+            <div role="tabpanel" class="tab-pane" id="regu" style="padding-top: 50px;">
+                <div class="data-div">
+                    <div class="tablebody col-lg-10 col-lg-offset-1">
+                        <div class="row">
+                            <div class="col-xs-3" style="padding-right: 0;">签到超时时间</div>
+                            <div class="col-xs-7 expand-col">
+                                <div class="slider-minmax1">
+                                </div>
+                                <div class="row top100">
+                                    <span class="left">0</span>
+                                    <span class="right">30</span>
+                                </div>
+                            </div>
+                            <div class="col-xs-2">
+                                <button class="btn btn-xs btn-white">默认值</button>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-xs-3" style="padding-right: 0;">抢座超时时间</div>
+                            <div class="col-xs-7 expand-col">
+                                <div class="slider-minmax2">
+                                </div>
+                                <div class="row top100">
+                                    <span class="left">0</span>
+                                    <span class="right">15</span>
+                                </div>
+                            </div>
+                            <div class="col-xs-2">
+                                <button class="btn btn-xs btn-white">默认值</button>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-xs-3" style="padding-right: 0;">临时离开超时时间</div>
+                            <div class="col-xs-7 expand-col">
+                                <div class="slider-minmax3">
+                                </div>
+                                <div class="row top100">
+                                    <span class="left">0</span>
+                                    <span class="right">60</span>
+                                </div>
+                            </div>
+                            <div class="col-xs-2">
+                                <button class="btn btn-xs btn-white">默认值</button>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-xs-3" style="padding-right: 0;">违约次数冻结上限</div>
+                            <div class="col-xs-7 expand-col">
+                                <div class="slider-minmax4">
+                                </div>
+                                <div class="row top100">
+                                    <span class="left">0</span>
+                                    <span class="right">100</span>
+                                </div>
+                            </div>
+                            <div class="col-xs-2">
+                                <button class="btn btn-xs btn-white">默认值</button>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-xs-3" style="padding-right: 0;">可预约天数</div>
+                            <div class="col-xs-7 expand-col">
+                                <div class="slider-minmax5">
+                                </div>
+                                <div class="row top100">
+                                    <span class="left">0</span>
+                                    <span class="right">7</span>
+                                </div>
+                            </div>
+                            <div class="col-xs-2">
+                                <button class="btn btn-xs btn-white">默认值</button>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-xs-3" style="padding-right: 0;">最大未完成预约数</div>
+                            <div class="col-xs-7 expand-col">
+                                <div class="slider-minmax6">
+                                </div>
+                                <div class="row top100">
+                                    <span class="left">0</span>
+                                    <span class="right">10</span>
+                                </div>
+                            </div>
+                            <div class="col-xs-2">
+                                <button class="btn btn-xs btn-white">默认值</button>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-xs btn-white" data-dismiss="modal">取 消</button>
+                            <button type="button" class="btn btn-xs btn-green">确 定</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!--时间段管理模块-->
+            <div role="tabpanel" class="tab-pane" id="time">
+                <div class="check-div form-inline">
+                    <span href="#sitt" aria-controls="sitt" role="tab" data-toggle="tab" style="cursor: pointer;"><span
+                            class="glyphicon glyphicon glyphicon-chevron-left"></span>&nbsp;&nbsp;返回上一页</span>
+
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                    <button class="btn btn-yellow btn-xs " data-toggle="modal" data-target="#addTime">添加时间段</button>
+
+                </div>
+                <div class="data-div">
+                    <div class="row tableHeader">
+                        <div class="col-xs-3 ">
+                            编码
+                        </div>
+                        <div class="col-xs-3">
+                            开始
+                        </div>
+                        <div class="col-xs-3">
+                            结束
+                        </div>
+
+                        <div class="col-xs-3">
+                            操作
+                        </div>
+                    </div>
+                    <div class="tablebody">
+
+                        <div class="row">
+                            <div class="col-xs-3 ">
+                                6426398978
+                            </div>
+                            <div class="col-xs-3">
+                                10:10
+                            </div>
+                            <div class="col-xs-3">
+                                19:30
+                            </div>
+                            <div class="col-xs-3">
+                                <button class="btn btn-success btn-xs" data-toggle="modal" data-target="#changeTime">
+                                    修改
+                                </button>
+                                <button class="btn btn-danger btn-xs" data-toggle="modal" data-target="#deleteTime">删除
+                                </button>
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div>
+                <!--页码块-->
+                <footer class="footer">
+                    <ul class="pagination">
+                        <li>
+                            <select>
+                                <option>1</option>
+                                <option>2</option>
+                                <option>3</option>
+                                <option>4</option>
+                                <option>5</option>
+                                <option>6</option>
+                                <option>7</option>
+                                <option>8</option>
+                                <option>9</option>
+                                <option>10</option>
+                            </select>
+                            页
+                        </li>
+                        <li class="gray">
+                            共20页
+                        </li>
+                        <li>
+                            <i class="glyphicon glyphicon-menu-left">
+                            </i>
+                        </li>
+                        <li>
+                            <i class="glyphicon glyphicon-menu-right">
+                            </i>
+                        </li>
+                    </ul>
+                </footer>
+
+                <!--弹出增加时间段窗口-->
+                <div class="modal fade" id="addTime" role="dialog" aria-labelledby="gridSystemModalLabel">
+                    <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                                        aria-hidden="true">&times;</span></button>
+                                <h4 class="modal-title">时间段设置</h4>
+                            </div>
+                            <div class="modal-body">
+                                <div class="container-fluid">
+                                    <form class="form-horizontal">
+                                        <div class="form-group ">
+                                            <label for="sName" class="col-xs-3 control-label">开始时间：</label>
+                                            <div class="col-xs-8 ">
+                                                <input type="email" class="form-control input-sm"
+                                                       placeholder="">
+                                            </div>
+                                        </div>
+                                        <div class="form-group ">
+                                            <label for="sName" class="col-xs-3 control-label">结束时间：</label>
+                                            <div class="col-xs-8 ">
+                                                <input type="email" class="form-control input-sm"
+                                                       placeholder="">
+                                            </div>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-xs btn-white" data-dismiss="modal">取 消</button>
+                                <button type="button" class="btn btn-xs btn-green">确 定</button>
+                            </div>
+                        </div>
+                        <!-- /.modal-content -->
+                    </div>
+                    <!-- /.modal-dialog -->
+                </div>
+                <!-- /.modal -->
+
+                <!--修改增加时间段窗口-->
+                <div class="modal fade" id="changeTime" role="dialog" aria-labelledby="gridSystemModalLabel">
+                    <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                                        aria-hidden="true">&times;</span></button>
+                                <h4 class="modal-title">修改时间段</h4>
+                            </div>
+                            <div class="modal-body">
+                                <div class="container-fluid">
+                                    <form class="form-horizontal">
+                                        <div class="form-group ">
+                                            <label for="sName" class="col-xs-3 control-label">开始时间：</label>
+                                            <div class="col-xs-8 ">
+                                                <input type="email" class="form-control input-sm duiqi"
+                                                       placeholder="">
+                                            </div>
+                                        </div>
+                                        <div class="form-group ">
+                                            <label for="sName" class="col-xs-3 control-label">结束时间：</label>
+                                            <div class="col-xs-8 ">
+                                                <input type="email" class="form-control input-sm duiqi"
+                                                       placeholder="">
+                                            </div>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-xs btn-white" data-dismiss="modal">取 消</button>
+                                <button type="button" class="btn btn-green btn-xs">确 定</button>
+                            </div>
+                        </div>
+                        <!-- /.modal-content -->
+                    </div>
+                    <!-- /.modal-dialog -->
+                </div>
+                <!-- /.modal -->
+                <!--弹出删除时间段警告窗口-->
+                <div class="modal fade" id="deleteTime" role="dialog" aria-labelledby="gridSystemModalLabel">
+                    <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                                        aria-hidden="true">&times;</span></button>
+                                <h4 class="modal-title">提示</h4>
+                            </div>
+                            <div class="modal-body">
+                                <div class="container-fluid">
+                                    确定要删除该时间段？
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-xs btn-white" data-dismiss="modal">取 消</button>
+                                <button type="button" class="btn btn-danger btn-xs">确 定</button>
+                            </div>
+                        </div>
+                        <!-- /.modal-content -->
+                    </div>
+                    <!-- /.modal-dialog -->
+                </div>
+                <!-- /.modal -->
+
+            </div>
+            <!--座位管理模块-->
+            <div role="tabpanel" class="tab-pane" id="sitt">
+
+                <div class="check-div form-inline" style="">
+                    <div class="col-lg-4 col-xs-7 col-md-6">
+                        <button class="btn btn-yellow btn-xs" data-toggle="modal" data-target="#addBuilding">添加教室
+                        </button>
+                    </div>
+                    <div class="col-lg-4 col-lg-offset-4 col-xs-4 col-md-5 "
+                         style="padding-right: 40px;text-align: right;">
+                        <input type="text" class=" form-control input-sm " placeholder="输入文字搜索">
+                        <button class="btn btn-white btn-xs ">查 询</button>
+                    </div>
+                </div>
+                <div class="data-div">
+                    <div class="row tableHeader">
+                        <div class="col-xs-2">
+                            教室
+                        </div>
+                        <div class="col-xs-2">
+                            座位数
+                        </div>
+                        <div class="col-xs-2">
+                            可用座位
+                        </div>
+                        <div class="col-xs-2">
+                            不可用
+                        </div>
+                        <div class="col-xs-2">
+                            操作
+                        </div>
+                    </div>
+                    <div class="tablebody" id="room_tablebody">
+                        <!--TODO-->
+                    </div>
+                </div>
+                <!--页码块-->
+                <footer class="footer">
+                    <ul class="pagination">
+                        <li>
+                            <select>
+                                <option>1</option>
+                                <option>2</option>
+                                <option>3</option>
+                                <option>4</option>
+                                <option>5</option>
+                                <option>6</option>
+                                <option>7</option>
+                                <option>8</option>
+                                <option>9</option>
+                                <option>10</option>
+                            </select>
+                            页
+                        </li>
+                        <li class="gray">
+                            共20页
+                        </li>
+                        <li>
+                            <i class="glyphicon glyphicon-menu-left">
+                            </i>
+                        </li>
+                        <li>
+                            <i class="glyphicon glyphicon-menu-right">
+                            </i>
+                        </li>
+                    </ul>
+                </footer>
+
+                <!--弹出添加教室窗口-->
+                <div class="modal fade" id="addBuilding" role="dialog" aria-labelledby="gridSystemModalLabel">
+                    <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                                        aria-hidden="true">&times;</span></button>
+                                <h4 class="modal-title">添加教室</h4>
+                            </div>
+                            <div class="modal-body">
+                                <div class="container-fluid">
+                                    <form class="form-horizontal">
+                                        <div class="form-group ">
+                                            <label for="sName" class="col-xs-3 control-label">教室：</label>
+                                            <div class="col-xs-8 ">
+                                                <input type="email" class="form-control input-sm duiqi"
+                                                       placeholder="">
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="sOrd" class="col-xs-3 control-label">座位数：</label>
+                                            <div class="col-xs-8">
+                                                <input type="" class="form-control input-sm duiqi"
+                                                       placeholder="">
+                                            </div>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-xs btn-white" data-dismiss="modal">取 消</button>
+                                <button type="button" class="btn btn-xs btn-green">确 定</button>
+                            </div>
+                        </div>
+                        <!-- /.modal-content -->
+                    </div>
+                    <!-- /.modal-dialog -->
+                </div>
+                <!-- /.modal -->
+
+                <!--弹出修改用户窗口-->
+                <div class="modal fade" id="reviseUser" role="dialog" aria-labelledby="gridSystemModalLabel">
+                    <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                                        aria-hidden="true">&times;</span></button>
+                                <h4 class="modal-title">修改用户</h4>
+                            </div>
+                            <div class="modal-body">
+                                <div class="container-fluid">
+                                    <form class="form-horizontal">
+                                        <div class="form-group ">
+                                            <label for="sName" class="col-xs-3 control-label">用户名：</label>
+                                            <div class="col-xs-8 ">
+                                                <input type="email" class="form-control input-sm" id="sName"
+                                                       placeholder="">
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="sLink" class="col-xs-3 control-label">真实姓名：</label>
+                                            <div class="col-xs-8 ">
+                                                <input type="" class="form-control input-sm" id="sLink" placeholder="">
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="sOrd" class="col-xs-3 control-label">电子邮箱：</label>
+                                            <div class="col-xs-8">
+                                                <input type="" class="form-control input-sm" id="sOrd" placeholder="">
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="sKnot" class="col-xs-3 control-label">电话：</label>
+                                            <div class="col-xs-8">
+                                                <input type="" class="form-control input-sm" placeholder="">
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="sKnot" class="col-xs-3 control-label">地区：</label>
+                                            <div class="col-xs-8">
+                                                <input type="" class="form-control input-sm" placeholder="">
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="sKnot" class="col-xs-3 control-label">权限：</label>
+                                            <div class="col-xs-8">
+                                                <input type="" class="form-control input-sm" id="sKnot" placeholder="">
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="col-xs-3 control-label">状态：</label>
+                                            <div class="col-xs-8">
+                                                <label class="control-label">
+                                                    <input type="radio" name="situation" id="normal">正常</label> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                                                <label class="control-label">
+                                                    <input type="radio" name="situation" id="forbid"> 禁用</label>
+                                            </div>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-xs btn-xs btn-white" data-dismiss="modal">取 消
+                                </button>
+                                <button type="button" class="btn btn-xs btn-green">确 定</button>
+                            </div>
+                        </div>
+                        <!-- /.modal-content -->
+                    </div>
+                    <!-- /.modal-dialog -->
+                </div>
+                <!-- /.modal -->
+
+                <!--弹出删除用户警告窗口-->
+                <div class="modal fade" id="deleteUser" role="dialog" aria-labelledby="gridSystemModalLabel">
+                    <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                                        aria-hidden="true">&times;</span></button>
+                                <h4 class="modal-title" id="gridSystemModalLabel">提示</h4>
+                            </div>
+                            <div class="modal-body">
+                                <div class="container-fluid">
+                                    确定要删除该用户？删除后不可恢复！
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-xs btn-white" data-dismiss="modal">取 消</button>
+                                <button type="button" class="btn btn-green btn-xs">确 定</button>
+                            </div>
+                        </div>
+                        <!-- /.modal-content -->
+                    </div>
+                    <!-- /.modal-dialog -->
+                </div>
+                <!-- /.modal -->
+            </div>
+            <!--座位详情模块-->
+            <div role="tabpanel" class="tab-pane" id="sitDetail">
+                <div class="check-div form-inline">
+                    <span href="#sitt" aria-controls="sitt" role="tab" data-toggle="tab" style="cursor: pointer;"><span
+                            class="glyphicon glyphicon glyphicon-chevron-left"></span>&nbsp;&nbsp;返回上一页</span>
+                </div>
+                <div class="data-div">
+                    <!--TODO-->
+                    <div id="seats"></div>
+                </div>
+                <!--页码块-->
+                <footer class="footer">
+                    <ul class="pagination">
+                        <li>
+                            <select>
+                                <option>1</option>
+                                <option>2</option>
+                                <option>3</option>
+                                <option>4</option>
+                                <option>5</option>
+                                <option>6</option>
+                                <option>7</option>
+                                <option>8</option>
+                                <option>9</option>
+                                <option>10</option>
+                            </select>
+                            页
+                        </li>
+                        <li class="gray">
+                            共20页
+                        </li>
+                        <li>
+                            <i class="glyphicon glyphicon-menu-left">
+                            </i>
+                        </li>
+                        <li>
+                            <i class="glyphicon glyphicon-menu-right">
+                            </i>
+                        </li>
+                    </ul>
+                </footer>
+
+            </div>
+            <!--人员管理模块-->
+            <div role="tabpanel" class="tab-pane" id="stud">
+                <div class="check-div form-inline">
+                    <div class="col-xs-5">
+                        <input type="text" class=" form-control input-sm" placeholder="输入文字搜索"
+                               style="height: 40px!important;">
+                        <button class="btn btn-white btn-xs ">查 询</button>
+                    </div>
+                    <div class="col-xs-4 col-lg-4  col-md-5"
+                         style="padding-right: 40px;text-align: right;float: right;">
+                        <label for="daoru">导入人员信息表:&nbsp;</label>
+                        <button class="btn btn-white btn-xs " id="daoru">选取文件</button>
+                        <button class="btn btn-white btn-xs ">导入</button>
+                    </div>
+
+                </div>
+                <div class="data-div">
+                    <div class="row tableHeader">
+                        <div class="col-xs-2 ">
+                            学号
+                        </div>
+                        <div class="col-xs-1 ">
+                            姓名
+                        </div>
+                        <div class="col-xs-2">
+                            院系
+                        </div>
+                        <div class="col-xs-2">
+                            年年
+                        </div>
+                        <div class="col-xs-2 ">
+                            学习时长
+                        </div>
+                        <div class="col-xs-2">
+                            违约次数
+                        </div>
+                        <div class="col-xs-1">
+                            操作
+                        </div>
+                    </div>
+                    <div class="tablebody">
+
+                        <div class="row">
+                            <div class="col-xs-2 ">
+                                6426398978
+                            </div>
+                            <div class="col-xs-1">
+                                邓超
+                            </div>
+                            <div class="col-xs-2">
+                                计算机地区
+                            </div>
+                            <div class="col-xs-2">
+                                2013年
+                            </div>
+                            <div class="col-xs-2">
+                                15
+                            </div>
+                            <div class="col-xs-2">
+                                2
+                            </div>
+                            <div class="col-xs-1">
+                                <button class="btn btn-danger btn-xs" data-toggle="modal" data-target="#deleteObey">
+                                    清除违约
+                                </button>
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div>
+                <!--页码块-->
+                <footer class="footer">
+                    <ul class="pagination">
+                        <li>
+                            <select>
+                                <option>1</option>
+                                <option>2</option>
+                                <option>3</option>
+                                <option>4</option>
+                                <option>5</option>
+                                <option>6</option>
+                                <option>7</option>
+                                <option>8</option>
+                                <option>9</option>
+                                <option>10</option>
+                            </select>
+                            页
+                        </li>
+                        <li class="gray">
+                            共20页
+                        </li>
+                        <li>
+                            <i class="glyphicon glyphicon-menu-left">
+                            </i>
+                        </li>
+                        <li>
+                            <i class="glyphicon glyphicon-menu-right">
+                            </i>
+                        </li>
+                    </ul>
+                </footer>
+
+                <!--弹出删除违约记录警告窗口-->
+
+                <div class="modal fade" id="deleteObey" role="dialog" aria-labelledby="gridSystemModalLabel">
+                    <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                                        aria-hidden="true">&times;</span></button>
+                                <h4 class="modal-title" id="gridSystemModalLabel">提示</h4>
+                            </div>
+                            <div class="modal-body">
+                                <div class="container-fluid">
+                                    确定要删除该违约记录？删除后不可恢复！
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-xs btn-white" data-dismiss="modal">取 消</button>
+                                <button type="button" class="btn btn-xs btn-danger">确 定</button>
+                            </div>
+                        </div>
+                        <!-- /.modal-content -->
+                    </div>
+                    <!-- /.modal-dialog -->
+                </div>
+                <!-- /.modal -->
+
+            </div>
+        </div>
+    </div>
+</div>
+<!-- 滑块js -->
+<!--	<script type="text/javascript">
+        scale = function(btn, bar, title, unit) {
+                this.btn = document.getElementById(btn);
+                this.bar = document.getElementById(bar);
+                this.title = document.getElementById(title);
+                this.step = this.bar.getElementsByTagName("div")[0];
+                this.unit = unit;
+                this.init();
+        };
+        scale.prototype = {
+                init: function() {
+                        var f = this,
+                                g = document,
+                                b = window,
+                                m = Math;
+                        f.btn.onmousedown = function(e) {
+                                var x = (e || b.event).clientX;
+                                var l = this.offsetLeft;
+//						var max = f.bar.offsetWidth - this.offsetWidth;
+                                var max = f.bar.offsetWidth-20 ;
+                                g.onmousemove = function(e) {
+                                        var thisX = (e || b.event).clientX;
+                                        var to = m.min(max, m.max(-2, l + (thisX - x)));
+                                        f.btn.style.left = to+ 'px';
+                                        f.ondrag(m.round(m.max(0, to / max) * 100), to);
+                                        b.getSelection ? b.getSelection().removeAllRanges() : g.selection.empty();
+                                };
+                                g.onmouseup = new Function('this.onmousemove=null');
+                        };
+                },
+                ondrag: function(pos, x) {
+                        this.step.style.width = Math.max(0, x) +2+ 'px';
+                        this.title.innerHTML = pos / 10 + this.unit + "";
+                }
+        }
+        new scale('btn0', 'bar0', 'title0', "分钟");
+        new scale('btn1', 'bar1', 'title1', "分钟");
+        new scale('btn2', 'bar2', 'title2', "天");
+        new scale('btn3', 'bar3', 'title3', "次");
+</script>
+-->
+<script src="js/jquery.nouislider.js"></script>
+
+<!-- this page specific inline scripts -->
+<script>
+    //min/max slider
+    function huadong(my, unit, def, max) {
+        $(my).noUiSlider({
+            range: [0, max],
+            start: [def],
+            handles: 1,
+            connect: 'upper',
+            slide: function () {
+                var val = Math.floor($(this).val());
+                $(this).find(".noUi-handle").text(
+                    val + unit
+                );
+                console.log($(this).find(".noUi-handle").parent().parent().html());
+            },
+            set: function () {
+                var val = Math.floor($(this).val());
+                $(this).find(".noUi-handle").text(
+                    val + unit
+                );
+            }
+        });
+        $(my).val(def, true);
+    }
+
+    huadong('.slider-minmax1', "分钟", "5", 30);
+    huadong('.slider-minmax2', "分钟", "6", 15);
+    huadong('.slider-minmax3', "分钟", "10", 60);
+    huadong('.slider-minmax4', "次", "2", 10);
+    huadong('.slider-minmax5', "天", "3", 7);
+    huadong('.slider-minmax6', "天", "8", 10);
+</script>
+<script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+<script type="text/javascript">
+    //$(ul).width = window.screen.width;
+
+    //定义座位二维数组
+    //0表示这个位置没有座位
+    //1可选表示空位
+    //2表示被别人占位
+    //3表示自己选中的座位
+    var seatArray = new Array();
+    for(var i=0;i<30;i++){//一维数组长度为30
+        seatArray[i]=new Array();
+        for(var j=0;j<20;j++){//第二维长度为20
+            seatArray[i][j]=1;
+        }
+    }
+    //设置空位
+    seatArray[1][5]=0;
+    //设置被人占得位置
+    seatArray[12][13]=seatArray[11][13]=seatArray[2][13]=seatArray[12][1]=seatArray[2][3]=seatArray[5][6]=2;
+
+    //添加30行li
+    for(var v=0;v<15;v++){
+        $('#seats').append(
+            '<ul name = "chair">'+
+            '<li><img src="images/seat_empty.png"/></li>'+
+            '<li><img src="images/seat_empty.png"/></li>'+
+            '<li><img src="images/seat_empty.png"/></li>'+
+            '<li><img src="images/seat_empty.png"/></li>'+
+            '<li><img src="images/seat_empty.png"/></li>'+
+            '<li><img src="images/seat_empty.png"/></li>'+
+            '<li><img src="images/seat_empty.png"/></li>'+
+            '<li><img src="images/seat_empty.png"/></li>'+
+            '<li><img src="images/seat_empty.png"/></li>'+
+            '<li><img src="images/seat_empty.png"/></li>'+
+            '<li><img src="images/seat_empty.png"/></li>'+
+            '<li><img src="images/seat_empty.png"/></li>'+
+            '<li><img src="images/seat_empty.png"/></li>'+
+            '<li><img src="images/seat_empty.png"/></li>'+
+            '<li><img src="images/seat_empty.png"/></li>'+
+            '<li><img src="images/seat_empty.png"/></li>'+
+            '<li><img src="images/seat_empty.png"/></li>'+
+            '<li><img src="images/seat_empty.png"/></li>'+
+            '<li><img src="images/seat_empty.png"/></li>'+
+            '<li><img src="images/seat_empty.png"/></li>'+
+            '</ul>'+'<br/>')
+    }
+
+    //初始化特殊位置：没有座位的，被占的
+    for(var i=0;i<15;i++){
+        for(var j=0;j<20;j++){
+            //没有座位
+            if(seatArray[i][j]==0)
+                $('#seats >ul[name = "chair"]').eq(1).children().eq(j).replaceWith('<li><img src="images/seat_empty.png"/></li>');
+            //已经被别人占
+            if(seatArray[i][j]==2)
+                $('#seats >ul[name = "chair"]').eq(i).children().eq(j).replaceWith('<li><img src="images/seat_sold.png"/></li>')
+        }
+    }
+
+    //行号：parseInt($(this).parent().index()/2)
+    //列号：$(this).index()
+    $("ul[name = 'chair'] li").click(function(){
+        var row = parseInt($(this).parent().index()/2);
+        var col = $(this).index();
+        //报行列号
+        alert('第'+row+'行  第'+col+'列');
+        // 如果可选则更新状态
+        if (seatArray[row][col] == 1) {
+            $(this).replaceWith('<li><img src="images/seat_sold.png"/></li>');//更换图片
+            seatArray[row][col] = 3;//更新自己选定的数组位置状态
+        }else{
+            alert("作为已被占或不存在该座位！");
+        }
+
+    });
+</script>
+</body>
+
+</html>

@@ -1,0 +1,258 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <title>江西理工大学图书馆系统用户登录</title>
+    <link href="css/login.css" rel="stylesheet" rev="stylesheet" type="text/css" media="all"/>
+    <script type="text/javascript" src="js/jQuery1.7.js"></script>
+    <script type="text/javascript" src="js/jquery-1.8.2.min.js"></script>
+    <script type="text/javascript" src="js/jquery1.42.min.js"></script>
+    <script type="text/javascript" src="js/jquery.SuperSlide.js"></script>
+    <script type="text/javascript" src="js/Validform_v5.3.2_min.js"></script>
+    <script type="text/javascript">
+        $(document).ready(function () {
+            var $tab_li = $('#tab ul li');
+            $tab_li.hover(function () {
+                $(this).addClass('selected').siblings().removeClass('selected');
+                var index = $tab_li.index(this);
+                $('div.tab_box > div').eq(login).show().siblings().hide();
+            });
+        });
+    </script>
+    <script type="text/javascript">
+        $(function () {
+            /*学生登录信息验证*/
+            $("#stu_username_hide").focus(function () {
+                var username = $(this).val();
+                if (username == '输入账号') {
+                    $(this).val('');
+                }
+            });
+            $("#stu_username_hide").focusout(function () {
+                var username = $(this).val();
+                if (username == '') {
+                    $(this).val('输入账号');
+                }
+            });
+            $("#stu_password_hide").focus(function () {
+                var username = $(this).val();
+                if (username == '输入密码') {
+                    $(this).val('');
+                }
+            });
+            $("#stu_password_hide").focusout(function () {
+                var username = $(this).val();
+                if (username == '') {
+                    $(this).val('输入密码');
+                }
+            });
+            $("#stu_code_hide").focus(function () {
+                var username = $(this).val();
+                if (username == '输入验证码') {
+                    $(this).val('');
+                }
+            });
+            $("#stu_code_hide").focusout(function () {
+                var username = $(this).val();
+                if (username == '') {
+                    $(this).val('输入验证码');
+                }
+            });
+            $(".stu_login_error").Validform({
+                tiptype: function (msg, o, cssctl) {
+                    var objtip = $(".stu_error_box");
+                    cssctl(objtip, o.type);
+                    objtip.text(msg);
+                },
+                ajaxPost: true
+            });
+        });
+    </script>
+    <script type="text/javascript">
+        $(function () {
+            $(".screenbg ul li").each(function () {
+                $(this).css("opacity", "0");
+            });
+            $(".screenbg ul li:first").css("opacity", "1");
+            var index = 0;
+            var t;
+            var li = $(".screenbg ul li");
+            var number = li.size();
+
+            function change(index) {
+                li.css("visibility", "visible");
+                li.eq(login).siblings().animate({opacity: 0}, 3000);
+                li.eq(login).animate({opacity: 1}, 3000);
+            }
+
+            function show() {
+                login = login + 1;
+                if (login <= number - 1) {
+                    change(login);
+                } else {
+                    login = 0;
+                    change(login);
+                }
+            }
+
+            t = setInterval(show, 8000);
+            //根据窗口宽度生成图片宽度
+            var width = $(window).width();
+            $(".screenbg ul img").css("width", width + "px");
+        });
+    </script>
+    <!--检测验证码-->
+    <script type="text/javascript">
+        var stu_error_boxcheckcode;
+        function getXMLHttpRequest(){
+            var xmlhttp;
+            if(window.XMLHttpRequest){
+                //目前主流浏览器
+                xmlhttp=new XMLHttpRequest();
+            }else{
+                //ie 6  7
+                xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+            }
+            return xmlhttp;
+        }
+        function oncheckcodekeyup() {
+            var usercheckcode = document.getElementById("stu_code_hide").value;
+            var stu_error_box = document.getElementById("stu_error_box");
+            if (usercheckcode.length != 4) {
+                stu_error_box.innerHTML = "验证码错误";
+                stu_error_boxcheckcode = false;
+            }
+            var xmlhttp = getXMLHttpRequest();
+            xmlhttp.onreadystatechange = function () {
+                if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+                    var str = xmlhttp.responseText;
+                    if (str == "true") {
+                        stu_error_box.innerHTML = "验证码验证通过";
+                        document.getElementById("btn").disabled=false;
+                        stu_error_boxcheckcode = true;
+                    } else {
+                        stu_error_box.innerHTML = "验证码错误";
+                        stu_error_boxcheckcode = false;
+                    }
+                }
+
+            };
+
+            var url = "textcode";
+            //打开连接
+            xmlhttp.open("post", url);
+            //设置请求信息的头
+            xmlhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+            //发送数据
+            xmlhttp.send("checkcode=" + usercheckcode);
+            return false;
+
+        }
+    </script>
+    <!--登陆-->
+    <script type="text/javascript">
+        //如何发送数据呢？
+        function onbuttonclick(){
+            var code = document.getElementById("stu_code_hide");
+            if(code ==""){
+                oncheckcodekeyup();
+                document.getElementById("stu_error_box").innerHTML="请输入验证码";
+            }
+            if(!stu_error_boxcheckcode){
+                oncheckcodekeyup();
+                return;
+            }
+
+            //这里我们需要拿到用户输入的用户名和密码
+            var inputUsername=document.getElementById("stu_username_hide");
+            var inputPassword=document.getElementById("stu_password_hide");
+            var usercheckcode = document.getElementById("stu_code_hide").value;
+            var username=inputUsername.value;
+            var password=inputPassword.value;
+            //拿着username和password发送给servlet
+            //servlet返回数据告诉我到底用户名密码对不对
+            //我拿着结果决定到底跳转不跳转
+            var xmlhttp=getXMLHttpRequest();
+            xmlhttp.onreadystatechange=function(){
+                if(xmlhttp.readyState==4 && xmlhttp.status==200){
+                    //4代表响应数据已经读取完毕。
+                    //200代表代表读取的响应数据是一个成功的数据。
+                    var str=xmlhttp.responseText;
+                    if(str=="true"){
+                        //跳转
+                        document.getElementById("stu_error_box").innerHTML="登录成功";
+                        window.location.href="index.html";
+                    }else{
+                        //不跳转
+                        document.getElementById("stu_error_box").innerHTML="用户名密码错误";
+                    }
+                }
+
+            };
+
+            //javascript请求的网址
+            var url="checklogininfo";
+            //打开连接
+            xmlhttp.open("post",url);
+            //设置请求信息的头
+            xmlhttp.setRequestHeader("Content-type","application/x-www-form-urlencoded");
+            //发送数据
+            xmlhttp.send("username="+username+"&password="+password+"&checkcode="+usercheckcode);
+            return false;
+
+        }
+    </script>
+
+    <script type="text/javascript">
+        var n=0;
+        function onimgclick() {
+            document.getElementById("img").src="imagecode?n="+n;
+            var code = document.getElementById("stu_code_hide");
+            code.value = "";
+            n++;
+        }
+    </script>
+</head>
+
+<body>
+<div id="tab">
+    <div class="tab_box">
+        <!-- 学生登录开始 -->
+        <div>
+            <div class="stu_error_box" id="stu_error_box"></div>
+            <form action="" method="post" class="stu_login_error">
+                <div id="username">
+                    <label>账&nbsp;&nbsp;&nbsp;号：</label>
+                    <input type="text" id="stu_username_hide" name="username" value="输入账号" nullmsg="账号不能为空！"
+                           datatype="s6-18" errormsg="账号范围在6~18个字符之间！" sucmsg="账号验证通过！"/>
+                    <!--ajaxurl="demo/valid.jsp"-->
+                </div>
+                <div id="password">
+                    <label>密&nbsp;&nbsp;&nbsp;码：</label>
+                    <input type="password" id="stu_password_hide" name="password" value="输入密码" nullmsg="密码不能为空！"
+                           datatype="*6-16" errormsg="密码范围在6~16位之间！" sucmsg="密码验证通过！"/>
+                </div>
+                <div id="code">
+                    <label>验证码：</label>
+                    <input type="text" id="stu_code_hide" onkeyup="oncheckcodekeyup();" name="checkcode" value="输入验证码" nullmsg="验证码不能为空！"
+                           errormsg="验证码有4位数！"/>
+                    <img src="imagecode" title="点击更换" id="img" alt="验证码占位图" onclick="onimgclick();"/></div>
+                <div id="login">
+                    <button type="submit" disabled="true" id="btn" onclick="return onbuttonclick();">登录</button>
+                </div>
+            </form>
+        </div>
+
+    </div>
+</div>
+<div class="bottom"><p>Copyright © 2018 江西理工大学 All Rights Reserved.</p></div>
+<div class="screenbg">
+    <ul>
+        <li><a href="javascript:;"><img src="images/0.jpg"></a></li>
+        <li><a href="javascript:;"><img src="images/1.jpg"></a></li>
+        <li><a href="javascript:;"><img src="images/2.jpg"></a></li>
+    </ul>
+</div>
+</body>
+</html>
